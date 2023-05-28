@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Users\123\Desktop\Mesh-Face-Clustering-with-voxelization-master\Debug\OpenMesh_EX.exe</FullPath>
+      <FullPath>C:\Users\123\Desktop\Mesh-Face-Clustering-with-voxelization-master\Release\OpenMesh_EX.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

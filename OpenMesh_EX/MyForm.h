@@ -630,16 +630,14 @@ private: System::Void openModelDialog_FileOk(System::Object^  sender, System::Co
 }
 private: System::Void saveModelToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e)
 {
-	saveModelDialog->Filter = "Model(*.obj)|*obj";
-	saveModelDialog->ShowDialog();
+	mesh->Output_voxelizemesh();
 }
 private: System::Void saveModelDialog_FileOk(System::Object^  sender, System::ComponentModel::CancelEventArgs^  e)
 {
 	std::string filename;
-	MarshalString(saveModelDialog->FileName, filename);
+	//MarshalString(saveModelDialog->FileName, filename);
+	mesh->Output_voxelizemesh();
 
-	if (SaveFile(filename, mesh->hypmesh))
-		std::cout << filename << std::endl;
 }
 
 private: System::Void hScrollBar2_Scroll(System::Object^ sender, System::Windows::Forms::ScrollEventArgs^ e) 
@@ -687,7 +685,9 @@ private: System::Void faceClusterCloseFaceToolStripMenuItem_Click(System::Object
 	private:System::Void Structure_ClusteringToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e)
 	{
 		//mesh->bboxmesh->hypothesismesh();
-		mesh->struct_cluster();
+		//mesh->struct_cluster();
+		mesh->voxelize(1.0);
+		mesh->Render_Voxel();
 	}
 
 private: System::Void hScrollBar1_Scroll(System::Object^ sender, System::Windows::Forms::ScrollEventArgs^ e) 

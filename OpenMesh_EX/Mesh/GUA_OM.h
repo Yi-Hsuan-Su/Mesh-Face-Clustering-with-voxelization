@@ -286,7 +286,7 @@ public:
 	void setFaceColor();
 	void setCloseFaceColor();
 	void calFaceData();
-
+	void voxelize(float scale);
 	bool isintriangle(Tri_Mesh *mesh ,FIter fiter, OpenMesh::Vec3d pt );
 	void remesh();
 	Tri_Mesh* hypmesh;
@@ -364,3 +364,130 @@ bool SaveFile(std::string _fileName, Tri_Mesh* _mesh); //儲存mesh資料
 /*初始化view port設定函式*/
 
 #endif
+
+
+inline OpenMesh::Vec3f point_project(OpenMesh::Vec3f normal, OpenMesh::Vec3f center, OpenMesh::Vec3f point)
+{
+	float a, b, c, d, t;
+	float tup, tdwn;
+	OpenMesh::Vec3f root;
+	a = normal[0];
+	b = normal[1];
+	c = normal[2];
+	d = a * center[0] + b * center[1] + c * center[2];
+	tup = -1 * ((a * point[0]) + (b * point[1]) + (c * point[2]) - d);
+	tdwn = pow(a, 2) + pow(b, 2) + pow(c, 2);
+	t = tup / tdwn;
+	root[0] = point[0] + a * t;
+	root[1] = point[1] + b * t;
+	root[2] = point[2] + c * t;
+
+	return root;
+}
+inline OpenMesh::Vec3f intersectPoint(OpenMesh::Vec3f rayVector, OpenMesh::Vec3f rayPoint, OpenMesh::Vec3f planeNormal, OpenMesh::Vec3f planePoint)
+{
+	OpenMesh::Vec3f diff = rayPoint - planePoint;
+	double prod1 = dot(diff, planeNormal);
+	double prod2 = dot(rayVector, planeNormal);
+	double prod3 = prod1 / prod2;
+	return rayPoint - rayVector * prod3;
+}
+
+
+inline OpenMesh::Vec3f line_inertsect_plane(OpenMesh::Vec3f normal, OpenMesh::Vec3f center, OpenMesh::Vec3f to, OpenMesh::Vec3f from)
+{
+
+	float a, b, c, d, t;
+
+	OpenMesh::Vec3f root, lnorm, pto, pfrom, tnorm, fnorm;
+	float tod, fromd;
+	float linea, lineb, linec;
+
+
+	lnorm = from - to;
+	lnorm.normalized();
+
+
+	if (dot(lnorm, normal) == 0)
+	{
+		root = { -1000,-1000,-1000 };
+		return root;
+	}
+
+	pto = point_project(normal, center, to);
+	pfrom = point_project(normal, center, from);
+
+
+
+
+	tnorm = to - pto;
+	fnorm = from - pfrom;
+	tnorm.normalized();
+	fnorm.normalized();
+
+
+	if (dot(tnorm, fnorm) < 0.00)
+	{
+		root = intersectPoint(lnorm, to, normal, center);
+	}
+	else
+	{
+		root = { -1000,-1000,-1000 };
+	}
+
+	return root;
+}
+
+
+
+inline float caltrianglearea(OpenMesh::Vec3f verticesA, OpenMesh::Vec3f verticesB, OpenMesh::Vec3f verticesC)
+{
+	float a = (verticesA - verticesB).length();
+	float b = (verticesB - verticesC).length();
+	float c = (verticesA - verticesC).length();
+	float s = (a + b + c) / 2.0;
+	float sa, sb, sc;
+	sa = s - a;
+	sb = s - b;
+	sc = s - c;
+	return  sqrt(s * (s - a) * (s - b) * (s - c));
+}
+inline bool isintriangle(faceData f, OpenMesh::Vec3f pt)
+{
+	OpenMesh::Vec3f na, nb, nc;
+	float ra, rb, rc, rs;
+	float a, b, c, s;
+	std::vector <OpenMesh::Vec3f> fv;
+
+	for (int i = 0; i < f.getVertices().size(); i++)
+	{
+		fv.push_back((OpenMesh::Vec3f)f.getVertices()[i]);
+	}
+
+	ra = caltrianglearea(fv[0], fv[1], pt);
+	rb = caltrianglearea(fv[1], fv[2], pt);
+	rc = caltrianglearea(fv[2], fv[0], pt);
+	rs = f.getArea();
+
+	a = ra / rs;
+	b = rb / rs;
+	c = rc / rs;
+	s = a + b + c;
+	/*
+	std::cout << "a  =" << a << std::endl;
+	std::cout << "b  =" << b<< std::endl;
+	std::cout << "c  =" << c << std::endl;*/
+
+	if (0.95000 < s && s <= 1.010 && a >= 0 && b >= 0 && c >= 0)
+	{
+
+		//	std::cout << "s   =  " << s << std::endl;
+		return true;
+	}
+	else
+	{
+
+		return false;
+	}
+}
+

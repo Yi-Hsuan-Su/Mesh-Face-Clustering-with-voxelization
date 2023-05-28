@@ -1,0 +1,4 @@
+C:\Users\123\Desktop\Mesh-Face-Clustering-with-voxelization-master\OpenMesh_EX\Release\OpenMesh_EX.vcxprojAssemblyReference.cache
+C:\Users\123\Desktop\Mesh-Face-Clustering-with-voxelization-master\OpenMesh_EX\Release\OpenMesh_EX.MyForm.resources
+C:\Users\123\Desktop\Mesh-Face-Clustering-with-voxelization-master\OpenMesh_EX\Release\OpenMesh_EX.vcxproj.GenerateResource.cache
+C:\Users\123\Desktop\Mesh-Face-Clustering-with-voxelization-master\OpenMesh_EX\Release\OpenMesh_EX.vcxproj.CopyComplete

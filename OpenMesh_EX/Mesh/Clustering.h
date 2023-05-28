@@ -84,11 +84,11 @@ inline float findfarestdist(std::vector<faceData> fd ,  Cluster A , Cluster B)
 }
 
 
-inline std::vector<float> computebbox(std::vector< OpenMesh::Vec3d>  verts)
+inline std::vector<float> computebbox(std::vector< OpenMesh::Vec3f>  verts)
 {
 	float xmax = -10000, xmin = 10000, ymax = -10000, ymin = 10000, zmax = -1000, zmin = 1000;
 	std::vector<float> bound;
-	std::vector<OpenMesh::Vec3d> bbox;
+	std::vector<OpenMesh::Vec3f> bbox;
 
 
 	for (int i = 0; i < verts.size(); i++)

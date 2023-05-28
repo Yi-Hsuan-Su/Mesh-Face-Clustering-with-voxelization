@@ -1,4 +1,5 @@
 #include "GUA_OM.h"
+#include <algorithm>
 using namespace OpenMesh;
 namespace OMT
 {
@@ -530,38 +531,44 @@ void Tri_Mesh::Render_Voxel()
 {
 	if (voxel.size() > 0)
 	{
-		
-		glColor3f(0.0, 1.0, 0);
+
+
+		//glColor3f(0.0, 1.0, 0);
 		glPointSize(5.0);
 		glBegin(GL_POINTS);
-		for (int i = 0; i < xcellsize; i++)
+		for (int i = 0; i < voxel.size(); i++)
 		{
-			for (int j = 0; j < ycellsize; j++)
+			for (int j = 0; j < voxel[i].size(); j++)
 			{
-				for(int k =0 ; k<zcellsize ; k++)
+				for (int k = 0; k < voxel[i][j].size(); k++)
 				{
+					glColor3d(voxel[i][j][k].V_color[0], voxel[i][j][k].V_color[1], voxel[i][j][k].V_color[2]);
 					//std::cout << i << " " << j << " " << k << std::endl;
 					for (int l = 0; l < voxel[i][j][k].Vertex.size(); l++)
 					{
 						glVertex3d(voxel[i][j][k].Vertex[l][0], voxel[i][j][k].Vertex[l][1], voxel[i][j][k].Vertex[l][2]);
 					}
+
 				}
-			}		
+			}
 		}
 		glEnd();
 
 
-		glColor3f(1.0, 0, 0);
-		glLineWidth(5.0);
+
+		glLineWidth(2.0);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glBegin(GL_QUADS);
 		//voxel.print_face_idx();		
-		for (int i = 0; i < xcellsize; i++)
+		for (int i = 0; i < voxel.size(); i++)
 		{
-			for (int j = 0; j < ycellsize; j++)
+			for (int j = 0; j < voxel[i].size(); j++)
 			{
-				for (int k = 0; k < zcellsize; k++)
+				for (int k = 0; k < voxel[i][j].size(); k++)
 				{
+
+					glColor3d(voxel[i][j][k].V_color[0], voxel[i][j][k].V_color[1], voxel[i][j][k].V_color[2]);
+
 					for (int l = 0; l < voxel[i][j][k].Face.size(); l++)
 					{
 						for (int m = 0; m < voxel[i][j][k].Face[l].size(); m++)
@@ -569,13 +576,14 @@ void Tri_Mesh::Render_Voxel()
 							glVertex3d(voxel[i][j][k].Vertex[voxel[i][j][k].Face[l][m]][0], voxel[i][j][k].Vertex[voxel[i][j][k].Face[l][m]][1], voxel[i][j][k].Vertex[voxel[i][j][k].Face[l][m]][2]);
 						}
 					}
+
 				}
 			}
 		}
-	
+
 		glEnd();
 	}
-	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Tri_Mesh::Render_SolidWireframe()
@@ -1597,13 +1605,149 @@ void Tri_Mesh::UpdaeWeight(int index_i , int index_j)
 }
 
 
+void Tri_Mesh::voxelize(float scale)
+{
+	calFaceData();
+	std::vector<OpenMesh::Vec3f> v;
+	tstart = std::clock();
+	for (int i = 0; i < objVertices.size(); i++)
+	{
+		v.push_back(OpenMesh::Vec3f(objVertices[i][0], objVertices[i][1], objVertices[i][2]));
+	}
+
+	bbox = computebbox(v);
+
+	float xlength, ylength, zlength;
+
+	xlength = abs(bbox[0] - bbox[1]);
+	ylength = abs(bbox[2] - bbox[3]);
+	zlength = abs(bbox[4] - bbox[5]);
+
+	float xoffset, yoffset, zoffset;
+
+
+	xcellsize = xlength / (xlength + ylength + zlength) * 100 * scale;
+	ycellsize = ylength / (xlength + ylength + zlength) * 100 * scale;
+	zcellsize = zlength / (xlength + ylength + zlength) * 100 * scale;
+	
+
+	
+
+
+	xoffset = xlength / (xcellsize - 1);
+	yoffset = ylength / (ycellsize - 1);
+	zoffset = zlength / (zcellsize - 1);
+
+	voxel.resize(xcellsize);
+	for (int i = 0; i < voxel.size(); i++)
+	{
+		voxel[i].resize(ycellsize);
+		for (int j = 0; j < voxel[i].size(); j++)
+		{
+			voxel[i][j].resize(zcellsize);
+		}
+	}
+
+	std::cout << std::endl << "x cell size =  " << xcellsize << std::endl;
+	std::cout << "y cell size =  " << ycellsize << std::endl;
+	std::cout << "z cell size =  " << zcellsize << std::endl;
+
+	for (int i = 0; i < voxel.size(); i++)
+	{
+		for (int j = 0; j < voxel[i].size(); j++)
+		{
+			for (int k = 0; k < voxel[i][j].size(); k++)
+			{
+				//std::cout << i << "  " << j << " " << k << std::endl;
+				voxel[i][j][k].Setposition(OpenMesh::Vec3f(bbox[1] + xoffset * i, bbox[3] + yoffset * j, bbox[5] + zoffset * k));
+				voxel[i][j][k].Change_Scale(xoffset / 2, yoffset / 2, zoffset / 2);
+			}
+		}
+	}
+
+
+
+#pragma omp parallel  //num_threads(12)
+	{
+
+#pragma omp  for  collapse(3)  
+		for (int i = 0; i < voxel.size(); i++)
+		{
+			for (int j = 0; j < voxel[i].size(); j++)
+			{
+				for (int k = 0; k < voxel[i][j].size(); k++)
+				{
+					if (voxel[i][j][k].isintersect == false)
+					{
+						for (int l = 0; l < fd.size(); l++)
+						{
+							//voxel[i][j][k].V_color = fc[l].Color; //fc[l]
+
+							if (voxel[i][j][k].is_intersectwithface(fd[l])) // fd[l]
+							{
+								
+								voxel[i][j][k].V_color =OpenMesh::Vec3f(1.0,0.0,0.0); //fc[l]				
+								voxel[i][j][k].isintersect = true;
+							}
+				
+						}
+					}
+				}
+			}
+		}
+	}
+
+	std::cout << voxel.size() << std::endl;
+
+	for (int i = 0; i < voxel.size(); i++)
+	{
+		for (int j = 0; j < voxel[i].size(); j++)
+		{
+			for (int k = 0; k < voxel[i][j].size(); k++)
+			{
+				if (!voxel[i][j][k].isintersect)
+				{
+					voxel[i][j].erase(voxel[i][j].begin() + k);
+					k = k - 1;
+					if (voxel[i][j].size() == 1)
+					{
+						voxel[i][j].pop_back();
+					}
+				}
+			}
+		}
+	}
+	
+
+
+	tend = std::clock();
+
+
+	float  time;
+	float min, sec;
+	time = (tend - tstart) / CLOCKS_PER_SEC;
+	min = time / 60;
+	sec = (int)time % 60;
+	if (min > 1)
+	{
+		std::cout << min << "  minutes " << sec << "  seconds " << std::endl;;
+	}
+	else
+	{
+		std::cout << sec << "  seconds " << std::endl;
+	}
+	//std::cout << "stop" << std::endl;
+
+
+}
+
 void Tri_Mesh::Output_voxelizemesh() 
 {
 	
-	std::vector<OpenMesh::Vec3d> m_points;
+	std::vector<OpenMesh::Vec3f> m_points;
 
-	std::string s = "D:\\Mesh-Face-Clustering-voxelize/Output/";
-	std::string fn = "group_" + std::to_string(1) + ".obj";
+	std::string s = "Output/";
+	std::string fn = "voxelize_" + std::to_string(1) + ".obj";
 	std::string path = s + fn;
 	std::ofstream fout(path);
 	for(int i=0; i< voxel.size();i++)
@@ -1614,7 +1758,7 @@ void Tri_Mesh::Output_voxelizemesh()
 			{
 				for(int l = 0;l < voxel[i][j][k].Vertex.size(); l++)
 				{
-					std::vector<OpenMesh::Vec3d>::iterator it = std::find(m_points.begin(), m_points.end(), voxel[i][j][k].Vertex[l]);
+					std::vector<OpenMesh::Vec3f>::iterator it = std::find(m_points.begin(), m_points.end(), voxel[i][j][k].Vertex[l]);
 					if (it == m_points.end())
 					{
 						m_points.push_back(voxel[i][j][k].Vertex[l]);
@@ -1638,7 +1782,7 @@ void Tri_Mesh::Output_voxelizemesh()
 					fout << "f ";
 					for (int m = 0; m < 4; m++)
 					{
-						std::vector<OpenMesh::Vec3d>::iterator it = std::find(m_points.begin(), m_points.end(), voxel[i][j][k].Vertex[ voxel[i][j][k].Face[l][m] ]);
+						std::vector<OpenMesh::Vec3f>::iterator it = std::find(m_points.begin(), m_points.end(), voxel[i][j][k].Vertex[ voxel[i][j][k].Face[l][m] ]);
 						if (it != m_points.end())
 						{
 							fout << " " << std::distance(m_points.begin(), it)+1;
@@ -2038,11 +2182,11 @@ void Tri_Mesh::struct_cluster()
 	if (true)
 	{
 		
-		std::vector<OpenMesh::Vec3d> v;
+		std::vector<OpenMesh::Vec3f> v;
 		
 		for(int i =0 ; i < objVertices.size() ; i++)
 		{
-			v.push_back(OpenMesh::Vec3d(objVertices[i][0] , objVertices[i][1] , objVertices[i][2]));
+			v.push_back(OpenMesh::Vec3f(objVertices[i][0] , objVertices[i][1] , objVertices[i][2]));
 		}
 
 		bbox =computebbox(v);
@@ -2190,7 +2334,7 @@ void Tri_Mesh::struct_cluster()
 		std::cout << "FInal Cluster size " << result.size() << std::endl;
 		//分群視覺化
 		//--------------------------
-		if (false)
+		if (true)
 		{
 
 			for (int i = 0; i < fd.size(); i++)
